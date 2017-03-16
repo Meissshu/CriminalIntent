@@ -1,5 +1,6 @@
 package com.meishu.android.criminalintent;
 
+import java.util.Date;
 import java.util.UUID;
 
 /**
@@ -10,9 +11,12 @@ public class Crime {
 
     private UUID id;
     private String title;
+    private boolean solved;
+    private Date date;
 
     public Crime() {
         id = UUID.randomUUID();
+        date = new Date();
     }
 
     public String getTitle() {
@@ -26,5 +30,21 @@ public class Crime {
     public UUID getId() {
 
         return id;
+    }
+
+    public Date getDate() {
+        return date;
+    }
+
+    public void setDate(Date date) {
+        this.date = date;
+    }
+
+    public boolean isSolved() {
+        return solved;
+    }
+
+    public void setSolved(boolean solved) {
+        this.solved = solved;
     }
 }
