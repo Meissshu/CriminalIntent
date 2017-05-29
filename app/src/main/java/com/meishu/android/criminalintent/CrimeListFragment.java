@@ -27,11 +27,19 @@ public class CrimeListFragment extends Fragment {
 
     private RecyclerView crimeRecyclerView;
     private CrimeAdapter adapter;
+    private boolean isSubtitleVisible;
 
     @Override
     public void onCreateOptionsMenu(Menu menu, MenuInflater inflater) {
         super.onCreateOptionsMenu(menu, inflater);
         inflater.inflate(R.menu.fragment_crime_list, menu);
+
+        MenuItem subtitleItem = menu.findItem(R.id.menu_item_show_subtitle);
+        if (isSubtitleVisible) {
+            subtitleItem.setTitle(R.string.hide_subtitle);
+        } else {
+            subtitleItem.setTitle(R.string.show_subtitle);
+        }
     }
 
     @Override
@@ -55,6 +63,7 @@ public class CrimeListFragment extends Fragment {
         } else {
             adapter.notifyDataSetChanged();
         }
+        updateSubtitle();
     }
 
     @Override
@@ -73,6 +82,8 @@ public class CrimeListFragment extends Fragment {
                 startActivity(intent);
                 return true;
             case R.id.menu_item_show_subtitle:
+                isSubtitleVisible = !isSubtitleVisible;
+                getActivity().invalidateOptionsMenu();
                 updateSubtitle();
                 return true;
             default:
@@ -85,6 +96,9 @@ public class CrimeListFragment extends Fragment {
         int crimeCount = crimeLab.getCrimes().size();
         @SuppressLint("StringFormatMatches") String subtitle = getString(R.string.subtitle_format, crimeCount);
 
+        if (!isSubtitleVisible) {
+            subtitle = null;
+        }
         AppCompatActivity activity = (AppCompatActivity) getActivity();
         activity.getSupportActionBar().setSubtitle(subtitle);
     }
