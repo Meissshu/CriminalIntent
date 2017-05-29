@@ -18,6 +18,7 @@ import java.util.List;
 public class CrimeListFragment extends Fragment {
 
     private RecyclerView crimeRecyclerView;
+    private CrimeAdapter adapter;
 
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState) {
@@ -25,7 +26,17 @@ public class CrimeListFragment extends Fragment {
 
         crimeRecyclerView = (RecyclerView) view.findViewById(R.id.crime_recycler_view);
         crimeRecyclerView.setLayoutManager(new LinearLayoutManager(getActivity()));
+
+        updateUI();
+
         return view;
+    }
+
+    private void updateUI() {
+        CrimeLab crimeLab = CrimeLab.get(getActivity());
+        List<Crime> crimes = crimeLab.getCrimes();
+        adapter = new CrimeAdapter(crimes);
+        crimeRecyclerView.setAdapter(adapter);
     }
 
     private class CrimeHolder extends RecyclerView.ViewHolder {
