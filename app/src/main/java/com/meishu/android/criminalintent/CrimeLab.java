@@ -6,6 +6,7 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 
 import com.meishu.android.criminalintent.database.CrimeBaseHelper;
+import com.meishu.android.criminalintent.database.CrimeCursorWrapper;
 import com.meishu.android.criminalintent.database.CrimeDbScheme.CrimeTable;
 
 import java.util.ArrayList;
@@ -47,12 +48,33 @@ public class CrimeLab {
 
 
     public List<Crime> getCrimes() {
-        return new ArrayList<>();
+        List<Crime> crimes = new ArrayList<>();
+        CrimeCursorWrapper cursorWrapper = query(null, null);
+
+        try {
+            cursorWrapper.moveToFirst();
+            while (!cursorWrapper.isAfterLast()) {
+                crimes.add(cursorWrapper.getCrime());
+                cursorWrapper.moveToNext();
+            }
+        } finally {
+            cursorWrapper.close();
+        }
+        return crimes;
     }
 
     public Crime getCrime(UUID id) {
+        CrimeCursorWrapper cursorWrapper = query(CrimeTable.Cols.UUID + " = ?", new String[]{id.toString()});
 
-        return null;
+        try {
+            if (cursorWrapper.getCount() == 0) {
+                return null;
+            }
+            cursorWrapper.moveToFirst();
+            return cursorWrapper.getCrime();
+        } finally {
+            cursorWrapper.close();
+        }
     }
 
     private static ContentValues getContentValues(Crime crime) {
@@ -65,8 +87,9 @@ public class CrimeLab {
         return values;
     }
 
-    private Cursor query(String where, String whereArgs[]) {
-        return database.query(CrimeTable.NAME, null, where, whereArgs, null, null, null);
+    private CrimeCursorWrapper query(String where, String whereArgs[]) {
+        Cursor cursor = database.query(CrimeTable.NAME, null, where, whereArgs, null, null, null);
+        return new CrimeCursorWrapper(cursor);
     }
 
 
