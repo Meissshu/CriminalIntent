@@ -100,5 +100,8 @@ public class CrimeLab {
         database.update(CrimeTable.NAME, values, CrimeTable.Cols.UUID + " = ?", new String[]{uuidString});
     }
 
+    public int deleteCrime(UUID id) {
+        return database.delete(CrimeTable.NAME, CrimeTable.Cols.UUID + " = ?", new String[]{id.toString()});
+    }
 
 }
