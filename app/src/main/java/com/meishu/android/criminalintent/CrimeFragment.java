@@ -21,6 +21,7 @@ import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
+import android.widget.ImageButton;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -38,12 +39,14 @@ public class CrimeFragment extends Fragment {
     private CheckBox solvedCheckBox;
     private Button reportButton;
     private Button suspectButton;
+    private ImageButton callSuspect;
 
 
     private static final String ARG_CRIME_ID = "crime_id";
     private static final String DIALOG_DATE = "DialogDate";
     private static final int REQUEST_DATE = 0;
     public static final int REQUEST_SUSPECT = 1;
+    public static final int REQUEST_SUSPECT_NUMBER = 3;
 
     public static CrimeFragment newInstance(UUID crimeId) {
         Bundle args = new Bundle();
@@ -59,8 +62,6 @@ public class CrimeFragment extends Fragment {
         super.onCreate(savedInstanceState);
         UUID crimeId = (UUID) getArguments().getSerializable(ARG_CRIME_ID);
         crime = CrimeLab.get(getActivity()).getCrime(crimeId);
-
-
     }
 
     @Override
@@ -142,6 +143,15 @@ public class CrimeFragment extends Fragment {
             suspectButton.setText(crime.getSuspected());
         }
 
+        //final Intent getSuspectNumber = new Intent(Intent.ACTION_PICK, ContactsContract.CommonDataKinds.Phone.CONTENT_URI);
+        callSuspect = (ImageButton) v.findViewById(R.id.ib_call_suspect);
+        callSuspect.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivityForResult(pickContact, REQUEST_SUSPECT_NUMBER);
+            }
+        });
+
         PackageManager packageManager = getActivity().getPackageManager();
         if (packageManager.resolveActivity(pickContact, PackageManager.MATCH_DEFAULT_ONLY) == null) {
             suspectButton.setEnabled(false);
@@ -183,6 +193,47 @@ public class CrimeFragment extends Fragment {
                 }
 
                 break;
+            case REQUEST_SUSPECT_NUMBER:
+                if (data != null) {
+                    Uri uri = data.getData();
+
+                    String[] queryFields = {ContactsContract.Contacts._ID};
+
+                    Cursor cursor = getActivity().getContentResolver().query(uri, queryFields, null, null, null);
+
+                    String contactId = null;
+                    try {
+                        if (cursor.moveToFirst()) {
+                            contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
+                        }
+                    } finally {
+                        cursor.close();
+                    }
+
+                    Cursor cursorPhone = getActivity().getContentResolver().query(
+                            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                            new String[]{ContactsContract.CommonDataKinds.Phone.NUMBER},
+                            ContactsContract.CommonDataKinds.Phone.CONTACT_ID +
+                                    " = ? AND " +
+                                    ContactsContract.CommonDataKinds.Phone.TYPE + " = " +
+                                    ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE,
+                            new String[]{contactId},
+                            null);
+
+                    String contactNumber = null;
+                    try {
+                        if (cursorPhone.moveToFirst()) {
+                            contactNumber = cursorPhone.getString(cursorPhone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+                        }
+                    } finally {
+                        cursorPhone.close();
+                    }
+
+                    Uri uriNumber = Uri.parse("tel:" + contactNumber);
+                    Intent intent = new Intent(Intent.ACTION_DIAL, uriNumber);
+                    startActivity(intent);
+
+                }
             default:
                 break;
         }
