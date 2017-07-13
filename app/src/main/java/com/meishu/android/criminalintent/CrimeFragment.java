@@ -3,7 +3,10 @@ package com.meishu.android.criminalintent;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.database.Cursor;
+import android.net.Uri;
 import android.os.Bundle;
+import android.provider.ContactsContract;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.text.Editable;
@@ -32,11 +35,13 @@ public class CrimeFragment extends Fragment {
     private Button dateButton;
     private CheckBox solvedCheckBox;
     private Button reportButton;
+    private Button suspectButton;
 
 
     private static final String ARG_CRIME_ID = "crime_id";
     private static final String DIALOG_DATE = "DialogDate";
     private static final int REQUEST_DATE = 0;
+    public static final int REQUEST_SUSPECT = 1;
 
     public static CrimeFragment newInstance(UUID crimeId) {
         Bundle args = new Bundle();
@@ -121,6 +126,18 @@ public class CrimeFragment extends Fragment {
             }
         });
 
+        final Intent pickContact = new Intent(Intent.ACTION_PICK, ContactsContract.Contacts.CONTENT_URI);
+        suspectButton = (Button) v.findViewById(R.id.btn_crime_suspect);
+        suspectButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivityForResult(pickContact, REQUEST_SUSPECT);
+            }
+        });
+        if (crime.getSuspected() != null) {
+            suspectButton.setText(crime.getSuspected());
+        }
+
         return v;
     }
 
@@ -128,11 +145,40 @@ public class CrimeFragment extends Fragment {
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
         if (resultCode != Activity.RESULT_OK)
             return;
-        if (requestCode == REQUEST_DATE) {
-            Date date = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
-            crime.setDate(date);
-            dateButton.setText(crime.getDate().toString());
+        switch (requestCode) {
+            case REQUEST_DATE:
+                Date date = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
+                crime.setDate(date);
+                dateButton.setText(crime.getDate().toString());
+                break;
+            case REQUEST_SUSPECT:
+                if (data != null) {
+                    Uri uri = data.getData();
+                    // Определения полей, значения которых должны быть возвращены
+                    String[] queryFields = {ContactsContract.Contacts.DISPLAY_NAME};
+
+                    // выполнение запроса
+                    Cursor cursor = getActivity().getContentResolver().query(uri, queryFields, null, null, null);
+
+                    try {
+                        if (cursor.getCount() == 0) {
+                            return;
+                        }
+
+                        cursor.moveToFirst();
+                        String suspect = cursor.getString(0); // because we have only one column
+                        crime.setSuspected(suspect);
+                        suspectButton.setText(suspect);
+                    } finally {
+                        cursor.close();
+                    }
+                }
+
+                break;
+            default:
+                break;
         }
+
     }
 
     private String getCrimeReport() {
