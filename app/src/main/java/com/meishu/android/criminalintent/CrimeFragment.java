@@ -31,6 +31,7 @@ public class CrimeFragment extends Fragment {
     private EditText titleField;
     private Button dateButton;
     private CheckBox solvedCheckBox;
+    private Button reportButton;
 
 
     private static final String ARG_CRIME_ID = "crime_id";
@@ -103,6 +104,20 @@ public class CrimeFragment extends Fragment {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 crime.setSolved(isChecked);
+            }
+        });
+
+        reportButton = (Button) v.findViewById(R.id.btn_crime_report);
+        reportButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Intent.ACTION_SEND);
+                String mime = "text/plain";
+                intent.setType(mime);
+                intent.putExtra(Intent.EXTRA_TEXT, getCrimeReport());
+                intent.putExtra(Intent.EXTRA_SUBJECT, getString(R.string.crime_report_suspect));
+                intent = Intent.createChooser(intent, getString(R.string.send_report));
+                startActivity(intent);
             }
         });
 
