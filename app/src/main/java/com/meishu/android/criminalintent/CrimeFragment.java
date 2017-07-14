@@ -24,6 +24,7 @@ import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -42,6 +43,8 @@ public class CrimeFragment extends Fragment {
     private Button reportButton;
     private Button suspectButton;
     private ImageButton callSuspect;
+    private ImageButton photoButton;
+    private ImageView photoView;
 
 
     private static final String ARG_CRIME_ID = "crime_id";
@@ -158,6 +161,10 @@ public class CrimeFragment extends Fragment {
                 }
             }
         });
+
+        photoButton = (ImageButton) v.findViewById(R.id.ib_crime_camera);
+
+        photoView = (ImageView) v.findViewById(R.id.iv_crime_photo);
 
         PackageManager packageManager = getActivity().getPackageManager();
         if (packageManager.resolveActivity(pickContact, PackageManager.MATCH_DEFAULT_ONLY) == null) {
