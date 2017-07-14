@@ -240,6 +240,7 @@ public class CrimeFragment extends Fragment {
     }
 
     private Intent getDialIntent() {
+        // TODO: check for name exists in contacts
         String suspectedName = crime.getSuspected();
         if (suspectedName == null)
             return null;
