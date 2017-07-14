@@ -46,7 +46,6 @@ public class CrimeFragment extends Fragment {
     private static final String DIALOG_DATE = "DialogDate";
     private static final int REQUEST_DATE = 0;
     public static final int REQUEST_SUSPECT = 1;
-    public static final int REQUEST_SUSPECT_NUMBER = 3;
 
     public static CrimeFragment newInstance(UUID crimeId) {
         Bundle args = new Bundle();
@@ -148,7 +147,10 @@ public class CrimeFragment extends Fragment {
         callSuspect.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                startActivityForResult(pickContact, REQUEST_SUSPECT_NUMBER);
+                //startActivityForResult(pickContact, REQUEST_SUSPECT_NUMBER);
+                Intent intent = getDialIntent();
+                // TODO: if intent is null show dialog
+                startActivity(intent);
             }
         });
 
@@ -179,61 +181,17 @@ public class CrimeFragment extends Fragment {
                     Cursor cursor = getActivity().getContentResolver().query(uri, queryFields, null, null, null);
 
                     try {
-                        if (cursor.getCount() == 0) {
-                            return;
+                        if (cursor.moveToFirst()) {
+                            String suspect = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)); // because we have only one column
+                            crime.setSuspected(suspect);
+                            suspectButton.setText(suspect);
                         }
-
-                        cursor.moveToFirst();
-                        String suspect = cursor.getString(0); // because we have only one column
-                        crime.setSuspected(suspect);
-                        suspectButton.setText(suspect);
                     } finally {
                         cursor.close();
                     }
                 }
 
                 break;
-            case REQUEST_SUSPECT_NUMBER:
-                if (data != null) {
-                    Uri uri = data.getData();
-
-                    String[] queryFields = {ContactsContract.Contacts._ID};
-
-                    Cursor cursor = getActivity().getContentResolver().query(uri, queryFields, null, null, null);
-
-                    String contactId = null;
-                    try {
-                        if (cursor.moveToFirst()) {
-                            contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
-                        }
-                    } finally {
-                        cursor.close();
-                    }
-
-                    Cursor cursorPhone = getActivity().getContentResolver().query(
-                            ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
-                            new String[]{ContactsContract.CommonDataKinds.Phone.NUMBER},
-                            ContactsContract.CommonDataKinds.Phone.CONTACT_ID +
-                                    " = ? AND " +
-                                    ContactsContract.CommonDataKinds.Phone.TYPE + " = " +
-                                    ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE,
-                            new String[]{contactId},
-                            null);
-
-                    String contactNumber = null;
-                    try {
-                        if (cursorPhone.moveToFirst()) {
-                            contactNumber = cursorPhone.getString(cursorPhone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
-                        }
-                    } finally {
-                        cursorPhone.close();
-                    }
-
-                    Uri uriNumber = Uri.parse("tel:" + contactNumber);
-                    Intent intent = new Intent(Intent.ACTION_DIAL, uriNumber);
-                    startActivity(intent);
-
-                }
             default:
                 break;
         }
@@ -258,7 +216,48 @@ public class CrimeFragment extends Fragment {
             suspect = getString(R.string.crime_report_suspect, suspect);
         }
 
-        String report = getString(R.string.crime_report, crime.getTitle(), dateString, solvedString, suspect);
-        return report;
+        return getString(R.string.crime_report, crime.getTitle(), dateString, solvedString, suspect);
+    }
+
+    private Intent getDialIntent() {
+        String suspectedName = crime.getSuspected();
+        if (suspectedName == null)
+            return null;
+
+        String[] queryFields = {ContactsContract.Contacts._ID, ContactsContract.Contacts.DISPLAY_NAME};
+
+        Cursor cursor = getActivity().getContentResolver().query(ContactsContract.Contacts.CONTENT_URI, queryFields, null, null, null);
+
+        String contactId = null;
+        try {
+            if (cursor.moveToFirst()) {
+                contactId = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts._ID));
+            }
+        } finally {
+            cursor.close();
+        }
+
+        Cursor cursorPhone = getActivity().getContentResolver().query(
+                ContactsContract.CommonDataKinds.Phone.CONTENT_URI,
+                new String[]{ContactsContract.CommonDataKinds.Phone.NUMBER},
+                ContactsContract.CommonDataKinds.Phone.CONTACT_ID +
+                        " = ? AND " +
+                        ContactsContract.CommonDataKinds.Phone.TYPE + " = " +
+                        ContactsContract.CommonDataKinds.Phone.TYPE_MOBILE,
+                new String[]{contactId},
+                null);
+
+        String contactNumber = null;
+        try {
+            if (cursorPhone.moveToFirst()) {
+                contactNumber = cursorPhone.getString(cursorPhone.getColumnIndex(ContactsContract.CommonDataKinds.Phone.NUMBER));
+            }
+        } finally {
+            cursorPhone.close();
+        }
+
+        Uri uriNumber = Uri.parse("tel:" + contactNumber);
+
+        return new Intent(Intent.ACTION_DIAL, uriNumber);
     }
 }
