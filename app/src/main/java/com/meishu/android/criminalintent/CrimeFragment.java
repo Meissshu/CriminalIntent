@@ -2,6 +2,7 @@ package com.meishu.android.criminalintent;
 
 
 import android.app.Activity;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
@@ -11,6 +12,7 @@ import android.provider.ContactsContract;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.ShareCompat;
+import android.support.v7.app.AlertDialog;
 import android.text.Editable;
 import android.text.TextWatcher;
 import android.text.format.DateFormat;
@@ -149,8 +151,11 @@ public class CrimeFragment extends Fragment {
             public void onClick(View v) {
                 //startActivityForResult(pickContact, REQUEST_SUSPECT_NUMBER);
                 Intent intent = getDialIntent();
-                // TODO: if intent is null show dialog
-                startActivity(intent);
+                if (intent == null) {
+                    showNullSuspectAlertDialog();
+                } else {
+                    startActivity(intent);
+                }
             }
         });
 
@@ -159,6 +164,21 @@ public class CrimeFragment extends Fragment {
             suspectButton.setEnabled(false);
         }
         return v;
+    }
+
+    private void showNullSuspectAlertDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
+        builder.setMessage(getString(R.string.call_null_suspect))
+                .setTitle(R.string.call_null_suspect_title)
+                .setPositiveButton("OK", new DialogInterface.OnClickListener() {
+                    @Override
+                    public void onClick(DialogInterface dialog, int which) {
+                        if (dialog != null)
+                            dialog.dismiss();
+                    }
+                })
+                .create()
+                .show();
     }
 
     @Override
@@ -224,9 +244,11 @@ public class CrimeFragment extends Fragment {
         if (suspectedName == null)
             return null;
 
-        String[] queryFields = {ContactsContract.Contacts._ID, ContactsContract.Contacts.DISPLAY_NAME};
+        String[] queryFields = {ContactsContract.Contacts._ID};
+        String selection = ContactsContract.Contacts.DISPLAY_NAME + " = ?";
+        String[] selectionArgs = {suspectedName};
 
-        Cursor cursor = getActivity().getContentResolver().query(ContactsContract.Contacts.CONTENT_URI, queryFields, null, null, null);
+        Cursor cursor = getActivity().getContentResolver().query(ContactsContract.Contacts.CONTENT_URI, queryFields, selection, selectionArgs, null);
 
         String contactId = null;
         try {

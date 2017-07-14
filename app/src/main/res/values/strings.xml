@@ -21,4 +21,6 @@
     <string name="crime_report_suspect">the suspect is %1$s.</string>
     <string name="crime_report_subject">CriminalIntent Crime Report</string>
     <string name="send_report">Send crime report via</string>
+    <string name="call_null_suspect">There is no suspect to call! Please, choose one.</string>
+    <string name="call_null_suspect_title">Please, choose suspect!</string>
 </resources>
