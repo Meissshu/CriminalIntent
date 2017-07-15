@@ -11,6 +11,8 @@ import android.graphics.Point;
 
 public class PictureUtils {
 
+    // TODO: каждый раз создает новый битмап, вместо использования уже измененного изображения!
+
     public static Bitmap getScaledBitmap(String path, int destWidth, int destHeight) {
         BitmapFactory.Options options = new BitmapFactory.Options();
         options.inJustDecodeBounds = true;
