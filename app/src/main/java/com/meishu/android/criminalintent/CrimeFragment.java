@@ -6,9 +6,11 @@ import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.database.Cursor;
+import android.graphics.Bitmap;
 import android.net.Uri;
 import android.os.Bundle;
 import android.provider.ContactsContract;
+import android.provider.MediaStore;
 import android.support.v4.app.Fragment;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.ShareCompat;
@@ -19,12 +21,15 @@ import android.text.format.DateFormat;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.view.ViewTreeObserver;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.CompoundButton;
 import android.widget.EditText;
 import android.widget.ImageButton;
+import android.widget.ImageView;
 
+import java.io.File;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.UUID;
@@ -42,12 +47,17 @@ public class CrimeFragment extends Fragment {
     private Button reportButton;
     private Button suspectButton;
     private ImageButton callSuspect;
+    private ImageButton photoButton;
+    private ImageView photoView;
+    private File photoFile;
 
 
     private static final String ARG_CRIME_ID = "crime_id";
     private static final String DIALOG_DATE = "DialogDate";
+    public static final String DIALOG_MINIATURE = "DialogMiniature";
     private static final int REQUEST_DATE = 0;
     public static final int REQUEST_SUSPECT = 1;
+    public static final int REQUEST_TAKE_A_PIC = 2;
 
     public static CrimeFragment newInstance(UUID crimeId) {
         Bundle args = new Bundle();
@@ -63,6 +73,7 @@ public class CrimeFragment extends Fragment {
         super.onCreate(savedInstanceState);
         UUID crimeId = (UUID) getArguments().getSerializable(ARG_CRIME_ID);
         crime = CrimeLab.get(getActivity()).getCrime(crimeId);
+        photoFile = CrimeLab.get(getActivity()).getPhotoFile(crime);
     }
 
     @Override
@@ -159,11 +170,58 @@ public class CrimeFragment extends Fragment {
             }
         });
 
+        final Intent takeAPicture = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+        photoButton = (ImageButton) v.findViewById(R.id.ib_crime_camera);
+
+        boolean isPhotoAvailable = (photoFile != null) && (takeAPicture.resolveActivity(getActivity().getPackageManager()) != null);
+        photoButton.setEnabled(isPhotoAvailable);
+
+        if (isPhotoAvailable) {
+            Uri uri = Uri.fromFile(photoFile);
+            takeAPicture.putExtra(MediaStore.EXTRA_OUTPUT, uri);
+        }
+
+        photoButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                startActivityForResult(takeAPicture, REQUEST_TAKE_A_PIC);
+            }
+        });
+
+        photoView = (ImageView) v.findViewById(R.id.iv_crime_photo);
+        ViewTreeObserver viewTreeObserver = photoView.getViewTreeObserver();
+        viewTreeObserver.addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+            @Override
+            public void onGlobalLayout() {
+                updateImageView();
+            }
+        });
+        photoView.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                if (photoFile == null || !photoFile.exists())
+                    return;
+                FragmentManager manager = getFragmentManager();
+                BigMiniatureFragment dialog = BigMiniatureFragment.getInstance(photoFile.getPath());
+                dialog.show(manager, DIALOG_MINIATURE);
+            }
+        });
+
+
         PackageManager packageManager = getActivity().getPackageManager();
         if (packageManager.resolveActivity(pickContact, PackageManager.MATCH_DEFAULT_ONLY) == null) {
             suspectButton.setEnabled(false);
         }
         return v;
+    }
+
+    private void updateImageView() {
+        if (photoFile == null || !photoFile.exists()) {
+            photoView.setImageDrawable(null);
+        } else {
+            Bitmap bitmap = PictureUtils.getScaledBitmap(photoFile.getPath(), photoView.getWidth(), photoView.getHeight());
+            photoView.setImageBitmap(bitmap);
+        }
     }
 
     private void showNullSuspectAlertDialog() {
@@ -210,7 +268,9 @@ public class CrimeFragment extends Fragment {
                         cursor.close();
                     }
                 }
-
+                break;
+            case REQUEST_TAKE_A_PIC:
+                updateImageView();
                 break;
             default:
                 break;
