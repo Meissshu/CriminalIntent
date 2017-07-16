@@ -2,6 +2,7 @@ package com.meishu.android.criminalintent;
 
 
 import android.app.Activity;
+import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.PackageManager;
@@ -50,7 +51,7 @@ public class CrimeFragment extends Fragment {
     private ImageButton photoButton;
     private ImageView photoView;
     private File photoFile;
-
+    private Callbacks callbacks;
 
     private static final String ARG_CRIME_ID = "crime_id";
     private static final String DIALOG_DATE = "DialogDate";
@@ -59,6 +60,11 @@ public class CrimeFragment extends Fragment {
     public static final int REQUEST_SUSPECT = 1;
     public static final int REQUEST_TAKE_A_PIC = 2;
 
+
+    public interface Callbacks {
+        void onCrimeUpdated(Crime crime);
+    }
+
     public static CrimeFragment newInstance(UUID crimeId) {
         Bundle args = new Bundle();
         args.putSerializable(ARG_CRIME_ID, crimeId);
@@ -66,6 +72,15 @@ public class CrimeFragment extends Fragment {
         CrimeFragment fragment = new CrimeFragment();
         fragment.setArguments(args);
         return fragment;
+    }
+
+    @Override
+    public void onAttach(Context context) {
+        super.onAttach(context);
+
+        if (context instanceof Activity) {
+            callbacks = (Callbacks) context;
+        }
     }
 
     @Override
@@ -83,6 +98,12 @@ public class CrimeFragment extends Fragment {
     }
 
     @Override
+    public void onDetach() {
+        super.onDetach();
+        callbacks = null;
+    }
+
+    @Override
     public View onCreateView(LayoutInflater inflater, final ViewGroup container, Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_crime, container, false);
 
@@ -97,6 +118,7 @@ public class CrimeFragment extends Fragment {
             @Override
             public void onTextChanged(CharSequence s, int start, int before, int count) {
                 crime.setTitle(s.toString());
+                updateCrime();
 
             }
 
@@ -124,6 +146,7 @@ public class CrimeFragment extends Fragment {
             @Override
             public void onCheckedChanged(CompoundButton buttonView, boolean isChecked) {
                 crime.setSolved(isChecked);
+                updateCrime();
             }
         });
 
@@ -224,6 +247,11 @@ public class CrimeFragment extends Fragment {
         }
     }
 
+    public void updateCrime() {
+        CrimeLab.get(getActivity()).updateCrime(crime);
+        callbacks.onCrimeUpdated(crime);
+    }
+
     private void showNullSuspectAlertDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(getActivity());
         builder.setMessage(getString(R.string.call_null_suspect))
@@ -248,6 +276,7 @@ public class CrimeFragment extends Fragment {
                 Date date = (Date) data.getSerializableExtra(DatePickerFragment.EXTRA_DATE);
                 crime.setDate(date);
                 dateButton.setText(crime.getDate().toString());
+                updateCrime();
                 break;
             case REQUEST_SUSPECT:
                 if (data != null) {
@@ -263,6 +292,7 @@ public class CrimeFragment extends Fragment {
                             String suspect = cursor.getString(cursor.getColumnIndex(ContactsContract.Contacts.DISPLAY_NAME)); // because we have only one column
                             crime.setSuspected(suspect);
                             suspectButton.setText(suspect);
+                            updateCrime();
                         }
                     } finally {
                         cursor.close();
@@ -270,6 +300,7 @@ public class CrimeFragment extends Fragment {
                 }
                 break;
             case REQUEST_TAKE_A_PIC:
+                updateCrime();
                 updateImageView();
                 break;
             default:
